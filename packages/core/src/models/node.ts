@@ -75,6 +75,7 @@ export class Node extends Pen {
     state: Node;
   }[] = [];
   animateAlone: boolean;
+  animateReady: boolean;
 
   gif: boolean;
   video: string;
@@ -225,9 +226,6 @@ export class Node extends Pen {
     this.calcAnchors();
     this.elementRendered = false;
 
-    if (this.TID) {
-      this.setChildrenIds();
-    }
     this.addToDiv();
   }
 
@@ -287,7 +285,20 @@ export class Node extends Pen {
 
   setTID(id: string) {
     this.TID = id;
-    this.setChildrenIds();
+
+    if (!this.children) {
+      return;
+    }
+
+    for (const item of this.children) {
+      this.TID = id;
+      switch (item.type) {
+        case PenType.Node:
+          (item as Node).setTID(id);
+          break;
+      }
+    }
+
     return this;
   }
 
@@ -610,6 +621,8 @@ export class Node extends Pen {
       this.animateFrames[i].end = passed;
       this.animateFrames[i].initState = Node.cloneState(i ? this.animateFrames[i - 1].state : this);
     }
+
+    this.animateReady = true;
   }
 
   animate(now: number) {
@@ -878,7 +891,7 @@ export class Node extends Pen {
     };
   }
 
-  hitInSelf(point: Point, padding = 0) {
+  hitInSelf(point: { x: number; y: number }, padding = 0) {
     if (this.rotate % 360 === 0) {
       return this.rect.hit(point, padding);
     }
@@ -890,7 +903,7 @@ export class Node extends Pen {
     return pointInRect(point, pts);
   }
 
-  hit(pt: Point, padding = 0) {
+  hit(pt: { x: number; y: number }, padding = 0) {
     let node: any;
     if (this.hitInSelf(pt, padding)) {
       node = this;
@@ -923,6 +936,7 @@ export class Node extends Pen {
   clone() {
     const n = new Node(this);
     n.setTID(this.TID);
+    this.setChildrenIds();
     return n;
   }
 }
